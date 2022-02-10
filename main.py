@@ -1,10 +1,15 @@
 import sys
 import requests
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel
+from PyQt5.QtWidgets import QApplication, QWidget
 from PyQt5 import uic
+from PyQt5.QtCore import Qt
 
-SCREEN_SIZE = [600, 450]
+COEFF_SCALING = 2
+
+
+class NoMapException(BaseException):
+    pass
 
 
 class Example(QWidget):
@@ -16,25 +21,35 @@ class Example(QWidget):
         self.scale = 0.002
         self.map_type = 'map'
         uic.loadUi("ui.ui", self)
-        self.getImage()
+        self.getImage(self.coords, self.scale)
 
-    def getImage(self):
+    def getImage(self, coords, scale):
         params = {
-            'll': ','.join(map(str, self.coords)),
-            'spn': f'{self.scale},{self.scale}',
+            'll': ','.join(map(str, coords)),
+            'spn': f'{scale},{scale}',
             'l': self.map_type
         }
         response = requests.get(self.static_url, params=params)
 
         if not response:
-            print("Ошибка выполнения запроса:")
-            print(response.url)
-            print("Http статус:", response.status_code, "(", response.reason, ")")
-            sys.exit(1)
+            raise NoMapException
 
         pixmap = QPixmap()
         pixmap.loadFromData(response.content, 'PNG')
         self.image.setPixmap(pixmap)
+
+    def keyPressEvent(self, a0):
+        if a0.key() in (Qt.Key_PageUp, Qt.Key_PageDown):
+            if a0.key() == Qt.Key_PageUp:
+                new_scale = self.scale / COEFF_SCALING
+            else:
+                new_scale = self.scale * COEFF_SCALING
+            try:
+                self.getImage(self.coords, new_scale)
+            except NoMapException:
+                pass
+            else:
+                self.scale = new_scale
 
 
 if __name__ == '__main__':
