@@ -9,18 +9,27 @@ SCREEN_SIZE = [600, 450]
 
 
 class Example(QWidget):
+    static_url = 'http://static-maps.yandex.ru/1.x/'
+
     def __init__(self):
         super().__init__()
+        self.coords = [37.530887, 55.703118]
+        self.scale = 0.002
+        self.map_type = 'map'
         self.getImage()
         self.initUI()
 
     def getImage(self):
-        map_request = "http://static-maps.yandex.ru/1.x/?ll=37.530887,55.703118&spn=0.002,0.002&l=map"
-        response = requests.get(map_request)
+        params = {
+            'll': ','.join(map(str, self.coords)),
+            'spn': f'{self.scale},{self.scale}',
+            'l': self.map_type
+        }
+        response = requests.get(self.static_url, params=params)
 
         if not response:
             print("Ошибка выполнения запроса:")
-            print(map_request)
+            print(response.url)
             print("Http статус:", response.status_code, "(", response.reason, ")")
             sys.exit(1)
 
